@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 import Agent from "@/components/Agent";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 
@@ -11,7 +12,6 @@ const Page = async () => {
       <Agent
         userName={user?.name!}
         userId={user?.id}
-        profileImage={user?.profileURL}
         type="generate"
       />
     </>
