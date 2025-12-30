@@ -119,44 +119,102 @@ const Agent = ({
   }, [messages, callStatus]);
 
   // --- START CALL HANDLER ---
-  const handleCall = async () => {
+//   const handleCall = async () => {
+//   try {
+//     setIsGenerating(true);
+//     setCallStatus(CallStatus.CONNECTING);
+
+//     const response = await fetch("/api/interview", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ role: "Software Engineer", level: "Senior", techstack: "React", amount: 5, userid: userId }),
+//     });
+
+//     const data = await response.json();
+//     if (!data.success) throw new Error(data.error);
+//     setActiveInterviewId(data.interviewId);
+
+//     // FIX: Using the correct assistantOverrides structure
+//     const assistantOverrides = {
+//       variableValues: {
+//         username: userName,
+//         questions: initialQuestions?.map((q) => `- ${q}`).join("\n") || "",
+//       },
+//       metadata: {
+//          interviewId: data.interviewId, // Alternative way to pass data to webhooks
+//          userId: userId
+//       }
+//     };
+
+//     // If starting by ID, pass the ID and the overrides object
+//     await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, assistantOverrides);
+
+//   } catch (err) {
+//     const msg = err instanceof Error ? err.message : "An error occurred";
+//     alert(msg);
+//     setCallStatus(CallStatus.INACTIVE);
+//   } finally {
+//     setIsGenerating(false);
+//   }
+// };
+
+const handleCall = async () => {
   try {
     setIsGenerating(true);
     setCallStatus(CallStatus.CONNECTING);
 
+    // 1. Generate the interview data first
     const response = await fetch("/api/interview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: "Software Engineer", level: "Senior", techstack: "React", amount: 5, userid: userId }),
+      body: JSON.stringify({ 
+        role: "Software Engineer", 
+        level: "Senior", 
+        techstack: "React", 
+        amount: 5, 
+        userid: userId 
+      }),
     });
 
     const data = await response.json();
     if (!data.success) throw new Error(data.error);
+    
     setActiveInterviewId(data.interviewId);
 
-    // FIX: Using the correct assistantOverrides structure
-    const assistantOverrides = {
+    // 2. Prepare the Vapi payload
+    // We cast as 'any' to fix the "customer does not exist" TS error
+    const callOptions: any = {
+      customer: {
+        extension: JSON.stringify({
+          interviewId: data.interviewId,
+          userId: userId,
+        }),
+      },
       variableValues: {
         username: userName,
-        questions: initialQuestions?.map((q) => `- ${q}`).join("\n") || "",
+        // Safe mapping to prevent the 'undefined' error you saw earlier
+        questions: initialQuestions?.map((q: string) => `- ${q}`).join("\n") || "",
       },
-      metadata: {
-         interviewId: data.interviewId, // Alternative way to pass data to webhooks
-         userId: userId
-      }
     };
 
-    // If starting by ID, pass the ID and the overrides object
-    await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, assistantOverrides);
+    // 3. Start the call
+    // Passing the Assistant ID and the options object
+    await vapi.start(
+      process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, 
+      callOptions
+    );
 
   } catch (err) {
+    // Correctly handling the 'unknown' error type for TS
     const msg = err instanceof Error ? err.message : "An error occurred";
+    console.error("Vapi Start Error:", msg);
     alert(msg);
     setCallStatus(CallStatus.INACTIVE);
   } finally {
     setIsGenerating(false);
   }
 };
+
 
   const handleDisconnect = () => {
     vapi.stop();
