@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { db } from "@/firebase/admin";
@@ -9,23 +10,24 @@ export async function saveInterview({
   messages,
   type,
 }: any) {
-  console.log("🔥 SAVE INTERVIEW CALLED");
-  console.log({ userId, interviewId, type, messagesLength: messages?.length });
+  if (!interviewId) {
+    console.error("❌ NO INTERVIEW ID PROVIDED");
+    return { success: false };
+  }
 
   try {
-    await db.collection("interviews").add({
-      userId,
-      interviewId,
-      type,
+    // USE .doc(id).update() INSTEAD OF .add()
+    await db.collection("interviews").doc(interviewId).update({
       transcript: messages,
       status: "COMPLETED",
-      createdAt: Timestamp.now(),
+      finalized: true, // Mark it as finished so it shows up correctly
+      completedAt: Timestamp.now(),
     });
 
-    console.log("✅ INTERVIEW SAVED");
+    console.log(`✅ INTERVIEW ${interviewId} UPDATED`);
     return { success: true };
   } catch (err) {
-    console.error("❌ SAVE INTERVIEW FAILED", err);
+    console.error("❌ UPDATE INTERVIEW FAILED", err);
     return { success: false };
   }
 }

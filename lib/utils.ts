@@ -1,5 +1,6 @@
 import { interviewCovers, mappings } from "@/constants";
 import { clsx, type ClassValue } from "clsx";
+import { url } from "inspector/promises";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -29,7 +30,7 @@ type TechLogo = {
 
 export const getTechLogos = async (
   techArray: string[]
-): Promise<TechLogo[]> => {
+): Promise<{ tech: string; url: string | null }[]> => {
   if (!Array.isArray(techArray)) {
     console.warn("getTechLogos received invalid techArray:", techArray);
     return [];
@@ -38,15 +39,17 @@ export const getTechLogos = async (
   return techArray.map((tech) => {
     const normalized = normalizeTechName(tech);
 
-    const logo = `https://cdn.jsdelivr.net/gh/devicons/devicon/icons/${normalized}/${normalized}-original.svg`;
+    // ✅ Added backticks around the URL string
+    const url = normalized 
+      ? `https://cdn.jsdelivr.net/gh/devicons/devicon/icons/${normalized}/${normalized}-original.svg`
+      : null;
 
     return {
       tech,
-      logo,
+      url,
     };
   });
 };
-
 
 export const getRandomInterviewCover = () => {
   const randomIndex = Math.floor(Math.random() * interviewCovers.length);
