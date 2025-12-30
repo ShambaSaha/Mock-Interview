@@ -22,24 +22,31 @@ const checkIconExists = async (url: string) => {
   }
 };
 
-export const getTechLogos = async (techArray: string[]) => {
-  const logoURLs = techArray.map((tech) => {
+type TechLogo = {
+  tech: string;
+  logo: string;
+};
+
+export const getTechLogos = async (
+  techArray: string[]
+): Promise<TechLogo[]> => {
+  if (!Array.isArray(techArray)) {
+    console.warn("getTechLogos received invalid techArray:", techArray);
+    return [];
+  }
+
+  return techArray.map((tech) => {
     const normalized = normalizeTechName(tech);
+
+    const logo = `https://cdn.jsdelivr.net/gh/devicons/devicon/icons/${normalized}/${normalized}-original.svg`;
+
     return {
       tech,
-      url: `${techIconBaseURL}/${normalized}/${normalized}-original.svg`,
+      logo,
     };
   });
-
-  const results = await Promise.all(
-    logoURLs.map(async ({ tech, url }) => ({
-      tech,
-      url: (await checkIconExists(url)) ? url : "/tech.svg",
-    }))
-  );
-
-  return results;
 };
+
 
 export const getRandomInterviewCover = () => {
   const randomIndex = Math.floor(Math.random() * interviewCovers.length);

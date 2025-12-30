@@ -1,28 +1,26 @@
-import { getApp, getApps } from "firebase/app";
-// import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDv-kizOPpfKLem6r87Jj4dyZE9V4NVYyc",
-  authDomain: "prepwise-f245a.firebaseapp.com",
-  projectId: "prepwise-f245a",
-  storageBucket: "prepwise-f245a.firebasestorage.app",
-  messagingSenderId: "568821522158",
-  appId: "1:568821522158:web:2d16d490586d758dc65dff",
-  measurementId: "G-RHLFDHG07Q"
-};
+// Initialize Firebase Admin SDK
+function initFirebaseAdmin() {
+  const apps = getApps();
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-// const analytics = getAnalytics(app);
+  if (!apps.length) {
+    initializeApp({
+      credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        // Replace newlines in the private key
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      }),
+    });
+  }
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+  return {
+    auth: getAuth(),
+    db: getFirestore(),
+  };
+}
+
+export const { auth, db } = initFirebaseAdmin();
