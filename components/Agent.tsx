@@ -127,7 +127,7 @@ const Agent = ({
     const response = await fetch("/api/interview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: "Software Engineer", level: "Senior", techstack: "React", amount: 5, userid: userId }),
+      body: JSON.stringify({ role: "Software Engineer", level: "Senior", techstack: "Java", amount: 2 , userid: userId }),
     });
 
     const data = await response.json();

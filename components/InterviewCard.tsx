@@ -25,14 +25,16 @@ const InterviewCard = async ({
         })
       : null;
 
-  const normalizedType = /mix/gi.test(type) ? "Mixed" : type;
+  // const normalizedType = /mix/gi.test(type) ? "Mixed" : type;
 
   const badgeColor =
     {
       Behavioral: "bg-light-400",
       Mixed: "bg-light-600",
       Technical: "bg-light-800",
-    }[normalizedType] || "bg-light-600";
+    }[type] || "bg-light-400";
+
+  // const normalizedType = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
 
   const formattedDate = dayjs(
     feedback?.createdAt || createdAt || Date.now()
@@ -49,7 +51,7 @@ const InterviewCard = async ({
               badgeColor
             )}
           >
-            <p className="badge-text ">{normalizedType}</p>
+            <p className="badge-text ">{type}</p>
           </div>
 
           {/* Cover Image */}
