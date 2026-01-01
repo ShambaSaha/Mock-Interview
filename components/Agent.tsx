@@ -255,15 +255,19 @@ const handleCall = async () => {
     if (!data.success) throw new Error(data.error);
 
     // 2. Start Vapi - Corrected Object Structure
-    await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
-      variableValues: {
-        username: userName || "Candidate",
-      },
-      metadata: {
-        userId: userId,
-        interviewId: interviewId,
-      },
-    });
+    // Replace your existing vapi.start inside handleCall with this:
+await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
+  assistantOverrides: {
+    variableValues: {
+      username: userName || "Candidate",
+    },
+  },
+  // Use metadata directly at the top level of the config object
+  metadata: {
+    userId: userId,
+    interviewId: interviewId,
+  },
+});
 
     setActiveInterviewId(interviewId);
   } catch (err) {
