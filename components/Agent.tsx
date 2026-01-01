@@ -244,7 +244,7 @@ const handleCall = async () => {
 
     const interviewId = crypto.randomUUID(); 
 
-    // 1. Create the placeholder
+    // 1. Create the placeholder in DB
     const response = await fetch("/api/interview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -254,20 +254,17 @@ const handleCall = async () => {
     const data = await response.json();
     if (!data.success) throw new Error(data.error);
 
-    // 2. Start Vapi - Corrected Object Structure
-    // Replace your existing vapi.start inside handleCall with this:
-await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
-  assistantOverrides: {
-    variableValues: {
-      username: userName || "Candidate",
-    },
-  },
-  // Use metadata directly at the top level of the config object
-  metadata: {
-    userId: userId,
-    interviewId: interviewId,
-  },
-});
+    // 2. Start Vapi - CORRECTED STRUCTURE
+    // The second argument is the configuration object itself
+    await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
+      variableValues: {
+        username: userName || "Candidate",
+      },
+      metadata: {
+        userId: userId,
+        interviewId: interviewId,
+      },
+    });
 
     setActiveInterviewId(interviewId);
   } catch (err) {
