@@ -1,62 +1,171 @@
-import { generateObject } from "ai";
-import { google } from "@ai-sdk/google";
+// import { generateObject } from "ai";
+// import { google } from "@ai-sdk/google";
+// import { db } from "@/firebase/admin";
+// import { getRandomInterviewCover } from "@/lib/utils";
+// import { z } from "zod";
+
+// export async function POST(request: Request) {
+//   const body = await request.json();
+
+//   // --- PART A: VAPI WEBHOOKS & TOOL CALLS ---
+//   if (body.message) {
+//     const messageType = body.message.type;
+
+//     // 1. Handle Real-time Tool Calls (getUserData & record_interview_results)
+//     if (messageType === "tool-call") {
+//       const toolCall = body.message.toolCalls[0];
+//       const { name, arguments: args } = toolCall.function;
+
+//       if (name === "getUserData") {
+//         // UPDATES the interview document with REAL data from the conversation
+//         await db.collection("interviews").doc(args.interviewId).update({
+//           role: args.role,
+//           level: args.level,
+//           type: args.type,
+//           techstack: typeof args.techstack === 'string' ? args.techstack.split(",") : args.techstack,
+//           amount: args.amount,
+//           updatedAt: new Date().toISOString(),
+//         });
+//       }
+
+//       if (name === "record_interview_results" || name === "recordResults") {
+//         // SAVES feedback data which InterviewCard.tsx looks for via getFeedbackByInterviewId
+//         await db.collection("feedbacks").doc(args.interviewId).set({
+//           totalScore: args.totalScore,
+//           finalAssessment: args.finalAssessment,
+//           interviewId: args.interviewId,
+//           createdAt: new Date().toISOString(),
+//         });
+//       }
+
+//      // This MUST be present to stop the red error in your screenshot
+// return Response.json({
+//   results: [{ toolCallId: toolCall.id, result: "Success" }]
+// }, { status: 200 });
+
+//     }
+
+//     // 2. Handle Finalization (End of Call)
+//     if (messageType === "end-of-call-report") {
+//       const { interviewId } = JSON.parse(body.message.call?.customer?.extension || "{}");
+//       if (interviewId) {
+//         await db.collection("interviews").doc(interviewId).update({
+//           finalized: true,
+//           endedAt: new Date().toISOString(),
+//           transcript: body.message.artifact?.transcript || "",
+//         });
+//       }
+//     }
+//     return Response.json({ success: true });
+//   }
+
+//   // --- PART B: FRONTEND START REQUEST (PLACEHOLDER CREATION) ---
+//   const { userid, interviewId } = body;
+
+//   try {
+//     // We create the doc immediately so activeInterviewId is valid, 
+//     // but we use "Pending" values that the Assistant will later update.
+//     const interviewData = {
+//       role: "Preparing...", 
+//       level: "...",
+//       techstack: [],
+//       questions: [], 
+//       userId: userid,
+//       finalized: false,
+//       coverImage: getRandomInterviewCover(),
+//       createdAt: new Date().toISOString(),
+//     };
+
+//     // Use the interviewId passed from frontend (generated via crypto.randomUUID)
+//     await db.collection("interviews").doc(interviewId).set(interviewData);
+
+//     return Response.json({ success: true, interviewId }, { status: 200 });
+//   } catch (error: any) {
+//     console.error("Error in route.ts:", error.message);
+//     return Response.json({ success: false, error: error.message }, { status: 500 });
+//   }
+// }
+
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
-import { z } from "zod";
 
 export async function POST(request: Request) {
   const body = await request.json();
 
-  // --- PART A: THE WEBHOOK (LISTENING TO VAPI) ---
+  // --- 1. HANDLE VAPI TOOL CALLS & WEBHOOKS ---
   if (body.message) {
-    if (body.message.type === "end-of-call-report") {
-      const callData = body.message.call;
-      const transcript = body.message.artifact?.transcript || "";
-      const { interviewId } = JSON.parse(callData.customer?.extension || "{}");
+    const messageType = body.message.type;
 
+    // A. Handle 'getUserData' Tool Call
+    if (messageType === "tool-call") {
+      const toolCall = body.message.toolCalls[0];
+      const { name, arguments: args } = toolCall.function;
+
+      if (name === "getUserData") {
+        // Update the placeholder with real user details
+        await db.collection("interviews").doc(args.interviewId).update({
+          role: args.role,
+          level: args.level,
+          type: args.type,
+          techstack: typeof args.techstack === 'string' ? args.techstack.split(",") : args.techstack,
+          amount: args.amount,
+          updatedAt: new Date().toISOString(),
+        });
+
+        // CRITICAL: Return this result so the Assistant knows it succeeded
+        return Response.json({
+          results: [{ 
+            toolCallId: toolCall.id, 
+            result: "Success! The interview card has been created on the user's dashboard. You may now proceed with the first question." 
+          }]
+        }, { status: 200 });
+      }
+
+      // B. Handle 'record_interview_results' Tool Call
+      if (name === "record_interview_results") {
+        await db.collection("feedbacks").doc(args.interviewId).set({
+          totalScore: args.totalScore,
+          finalAssessment: args.finalAssessment,
+          interviewId: args.interviewId,
+          createdAt: new Date().toISOString(),
+        });
+
+        return Response.json({
+          results: [{ toolCallId: toolCall.id, result: "Results recorded successfully." }]
+        }, { status: 200 });
+      }
+    }
+
+    // C. Handle End of Call (Finalize)
+    if (messageType === "end-of-call-report") {
+      const { interviewId } = body.message.call?.metadata || {};
       if (interviewId) {
         await db.collection("interviews").doc(interviewId).update({
-          transcript: transcript,
           finalized: true,
+          transcript: body.message.artifact?.transcript || "",
           endedAt: new Date().toISOString(),
         });
-        console.log(`✅ Interview ${interviewId} finalized.`);
       }
     }
     return Response.json({ success: true });
   }
 
-  // --- PART B: THE GENERATOR ---
-  const { role, level, techstack, amount, userid } = body;
-
+  // --- 2. HANDLE FRONTEND START BUTTON ---
+  const { userid, interviewId } = body;
   try {
-    // 1. UPDATED MODEL ID: gemini-3-flash-preview is the stable choice for Dec 2025
-    const { object } = await generateObject({
-      model: google("gemini-3-flash-preview"), 
-      maxRetries: 0,
-      schema: z.object({
-        questions: z.array(z.string()), 
-      }),
-      prompt: `Prepare ${amount} interview questions for a ${role} at ${level} level. Tech stack: ${techstack}.`,
-    });
-
-    const interviewData = {
-      role,
-      level,
-      techstack: Array.isArray(techstack) ? techstack : techstack.split(","),
-      questions: object.questions, // Automatically parsed by AI SDK
+    await db.collection("interviews").doc(interviewId).set({
       userId: userid,
+      interviewId: interviewId,
+      role: "Preparing...",
+      level: "...",
+      techstack: [],
       finalized: false,
       coverImage: getRandomInterviewCover(),
       createdAt: new Date().toISOString(),
-    };
+    });
 
-    const docRef = await db.collection("interviews").add(interviewData);
-
-    return Response.json({ success: true, interviewId: docRef.id }, { status: 200 });
+    return Response.json({ success: true, interviewId }, { status: 200 });
   } catch (error: any) {
-    console.error("Error in route.ts:", error.message);
-    // If you get a 429 here, it means you need to wait 60 seconds (Rate Limit)
     return Response.json({ success: false, error: error.message }, { status: 500 });
   }
 }
