@@ -185,24 +185,52 @@ export async function POST(request: Request) {
       const toolCall = body.message.toolCalls[0];
       const { name, arguments: args } = toolCall.function;
 
-      if (name === "getUserData") {
-        // Save real data to Firebase
-        await db.collection("interviews").doc(args.interviewId).update({
-          role: args.role,
-          level: args.level,
-          type: args.type,
-          techstack: args.techstack,
-          amount: args.amount,
-          updatedAt: new Date().toISOString(),
-        });
+      // if (name === "getUserData") {
+      //   // Save real data to Firebase
+      //   await db.collection("interviews").doc(args.interviewId).update({
+      //     role: args.role,
+      //     level: args.level,
+      //     type: args.type,
+      //     techstack: args.techstack,
+      //     amount: args.amount,
+      //     updatedAt: new Date().toISOString(),
+      //   });
 
-        return Response.json({
-          results: [{ 
-            toolCallId: toolCall.id, 
-            result: "Success! The interview card is created. Proceed to the first question." 
-          }]
-        }, { status: 200 });
-      }
+      //   return Response.json({
+      //     results: [{ 
+      //       toolCallId: toolCall.id, 
+      //       result: "Success! The interview card is created. Proceed to the first question." 
+      //     }]
+      //   }, { status: 200 });
+      // }
+
+      // inside your POST function
+if (name === "getUserData") {
+  // Use 'userId' or 'userid' to be safe
+  const uId = args.userId || args.userid;
+  const iId = args.interviewId || args.interviewid;
+
+  if (!iId) {
+    return Response.json({ error: "Missing interviewId" }, { status: 400 });
+  }
+
+  await db.collection("interviews").doc(iId).update({
+    role: args.role,
+    level: args.level,
+    type: args.type,
+    techstack: args.techstack,
+    amount: args.amount,
+    updatedAt: new Date().toISOString(),
+  });
+
+  return Response.json({
+    results: [{ 
+      toolCallId: toolCall.id, 
+      result: "Success" 
+    }]
+  }, { status: 200 });
+}
+
     }
     // Return a generic 200 for other Vapi messages (like logs)
     return Response.json({ success: true }, { status: 200 });
