@@ -1,24 +1,16 @@
-// import type { NextConfig } from "next";
-
-// const nextConfig: NextConfig = {
-//   /* config options here */
-//   eslint: {
-//     ignoreDuringBuilds: true,
-//   },
-//   typescript:{
-//     ignoreBuildErrors: true,
-//   }
-// };
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true, // This allows the build even with TS errors
-  },
-  eslint: {
-    ignoreDuringBuilds: true, // This bypasses the eslint error in your log
+  webpack: (config: { resolve: { fallback: { fs: boolean; net: boolean; tls: boolean; child_process: boolean; }; }; }, { isServer }: any) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        net: false,
+        tls: false,
+        child_process: false,
+      };
+    }
+    return config;
   },
 };
 
-module.exports = nextConfig;
 export default nextConfig;
