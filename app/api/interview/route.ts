@@ -205,37 +205,42 @@ export async function POST(request: Request) {
       // }
 
       // inside your POST function
-if (name === "getUserData") {
-  // Use 'userId' or 'userid' to be safe
-  const uId = args.userId || args.userid;
-  const iId = args.interviewId || args.interviewid;
+// --- 1. HANDLE VAPI TOOL CALLS ---
+  if (body.message && body.message.type === "tool-call") {
+    const toolCall = body.message.toolCalls[0];
+    const { name, arguments: args } = toolCall.function;
 
-  if (!iId) {
-    return Response.json({ error: "Missing interviewId" }, { status: 400 });
-  }
+    if (name === "getUserData") {
+      const iId = args.interviewId || args.interviewid;
+      
+      if (!iId) return Response.json({ error: "No ID" }, { status: 400 });
 
-  await db.collection("interviews").doc(iId).update({
-    role: args.role,
-    level: args.level,
-    type: args.type,
-    techstack: args.techstack,
-    amount: args.amount,
-    updatedAt: new Date().toISOString(),
-  });
+      await db.collection("interviews").doc(iId).update({
+        role: args.role,
+        level: args.level,
+        techstack: args.techstack,
+        amount: args.amount,
+        updatedAt: new Date().toISOString(),
+      });
 
-  return Response.json({
-    results: [{ 
-      toolCallId: toolCall.id, 
-      result: "Success" 
-    }]
-  }, { status: 200 });
-}
-
+      return Response.json({
+        results: [{ toolCallId: toolCall.id, result: "Success" }]
+      }, { status: 200 });
     }
-    // Return a generic 200 for other Vapi messages (like logs)
-    return Response.json({ success: true }, { status: 200 });
+    
+    // ADD THIS: Handle the record_results tool too!
+    if (name === "record_interview_results") {
+       await db.collection("feedbacks").doc(args.interviewId || args.interviewid).set({
+          totalScore: args.totalScore,
+          finalAssessment: args.finalAssessment,
+          interviewId: args.interviewId || args.interviewid,
+          createdAt: new Date().toISOString(),
+       });
+       return Response.json({
+         results: [{ toolCallId: toolCall.id, result: "Results Saved" }]
+       }, { status: 200 });
+    }
   }
-
   // --- 2. HANDLE FRONTEND BUTTON (The Placeholder) ---
   const { userid, interviewId } = body;
   if (interviewId && userid) {
