@@ -1,7 +1,7 @@
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* This part is crucial - it tells Next.js to allow the Webpack overrides */
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {

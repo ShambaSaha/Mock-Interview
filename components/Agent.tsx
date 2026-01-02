@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk"; // Using your existing SDK instance
 import { createFeedback } from "@/lib/actions/general.action";
-import { interviewer } from "@/constants";
+// import { interviewer } from "@/constants";
 import { saveInterview } from "@/lib/actions/interview.action";
 
 enum CallStatus {
@@ -118,124 +118,6 @@ const Agent = ({
     }
   }, [messages, callStatus]);
 
-//   // --- START CALL HANDLER ---
-//   const handleCall = async () => {
-//   try {
-//     setIsGenerating(true);
-//     setCallStatus(CallStatus.CONNECTING);
-
-//     const response = await fetch("/api/interview", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ role: "Software Engineer", level: "Senior", techstack: "Java", amount: 2 , userid: userId }),
-//     });
-
-//     const data = await response.json();
-//     if (!data.success) throw new Error(data.error);
-//     setActiveInterviewId(data.interviewId);
-
-//     // FIX: Using the correct assistantOverrides structure
-//     const assistantOverrides = {
-//       variableValues: {
-//         username: userName,
-//         questions: initialQuestions?.map((q) => `- ${q}`).join("\n") || "",
-//       },
-//       metadata: {
-//          interviewId: data.interviewId, // Alternative way to pass data to webhooks
-//          userId: userId
-//       }
-//     };
-
-//     // If starting by ID, pass the ID and the overrides object
-//     await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, assistantOverrides);
-
-//   } catch (err) {
-//     const msg = err instanceof Error ? err.message : "An error occurred";
-//     alert(msg);
-//     setCallStatus(CallStatus.INACTIVE);
-//   } finally {
-//     setIsGenerating(false);
-//   }
-// };
-
-
-// const handleCall = async () => {
-//   try {
-//     setIsGenerating(true);
-//     setCallStatus(CallStatus.CONNECTING);
-
-//     // 1. Create a unique ID for this session
-//     const interviewId = crypto.randomUUID(); 
-//     setActiveInterviewId(interviewId);
-
-//     // 2. ONLY send the IDs to the server to create an "Empty" record
-//     const response = await fetch("/api/interview", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ 
-//         interviewId, 
-//         userid: userId,
-//         isPlaceholder: true // Tells your API to wait for the Assistant's data
-//       }),
-//     });
-
-//     const data = await response.json();
-//     if (!data.success) throw new Error(data.error);
-
-//     // 3. Tell Vapi the IDs so the Assistant can use them in the 'getUserData' tool
-//     const assistantOverrides = {
-//       variableValues: { username: userName },
-//       customer: {
-//         extension: JSON.stringify({ userId, interviewId }),
-//       },
-//     };
-
-//     await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, assistantOverrides);
-
-//   } catch (err) {
-//     alert(err instanceof Error ? err.message : "An error occurred");
-//     setCallStatus(CallStatus.INACTIVE);
-//   } finally {
-//     setIsGenerating(false);
-//   }
-// };
-
-// const handleCall = async () => {
-//   try {
-//     setIsGenerating(true);
-//     setCallStatus(CallStatus.CONNECTING);
-
-//     const interviewId = crypto.randomUUID(); 
-
-//     // 1. Create the placeholder in DB
-//     const response = await fetch("/api/interview", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ interviewId, userid: userId }),
-//     });
-
-//     const data = await response.json();
-//     if (!data.success) throw new Error(data.error);
-
-//     // 2. FIXED VAPI START: No nested 'assistantOverrides' key
-//     await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID!, {
-//       variableValues: {
-//         username: userName || "Candidate",
-//       },
-//       metadata: {
-//         userId: userId,
-//         interviewId: interviewId,
-//       },
-//     });
-
-//     setActiveInterviewId(interviewId);
-//   } catch (err) {
-//     console.error("Vapi Start Error:", err);
-//     setCallStatus(CallStatus.INACTIVE);
-//   } finally {
-//     setIsGenerating(false);
-//   }
-// };
 
 const handleCall = async () => {
   try {
