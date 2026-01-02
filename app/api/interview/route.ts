@@ -86,86 +86,147 @@
 //   }
 // }
 
+// import { db } from "@/firebase/admin";
+// import { getRandomInterviewCover } from "@/lib/utils";
+
+// export async function POST(request: Request) {
+//   const body = await request.json();
+
+//   // --- 1. HANDLE VAPI TOOL CALLS & WEBHOOKS ---
+//   if (body.message) {
+//     const messageType = body.message.type;
+
+//     // A. Handle 'getUserData' Tool Call
+//     if (messageType === "tool-call") {
+//       const toolCall = body.message.toolCalls[0];
+//       const { name, arguments: args } = toolCall.function;
+
+//       if (name === "getUserData") {
+//         // Update the placeholder with real user details
+//         await db.collection("interviews").doc(args.interviewId).update({
+//           role: args.role,
+//           level: args.level,
+//           type: args.type,
+//           techstack: typeof args.techstack === 'string' ? args.techstack.split(",") : args.techstack,
+//           amount: args.amount,
+//           updatedAt: new Date().toISOString(),
+//         });
+
+//         // CRITICAL: Return this result so the Assistant knows it succeeded
+//         return Response.json({
+//           results: [{ 
+//             toolCallId: toolCall.id, 
+//             result: "Success! The interview card has been created on the user's dashboard. You may now proceed with the first question." 
+//           }]
+//         }, { status: 200 });
+//       }
+
+//       // B. Handle 'record_interview_results' Tool Call
+//       if (name === "record_interview_results") {
+//         await db.collection("feedbacks").doc(args.interviewId).set({
+//           totalScore: args.totalScore,
+//           finalAssessment: args.finalAssessment,
+//           interviewId: args.interviewId,
+//           createdAt: new Date().toISOString(),
+//         });
+
+//         return Response.json({
+//           results: [{ toolCallId: toolCall.id, result: "Results recorded successfully." }]
+//         }, { status: 200 });
+//       }
+//     }
+
+//     // C. Handle End of Call (Finalize)
+//     if (messageType === "end-of-call-report") {
+//       const { interviewId } = body.message.call?.metadata || {};
+//       if (interviewId) {
+//         await db.collection("interviews").doc(interviewId).update({
+//           finalized: true,
+//           transcript: body.message.artifact?.transcript || "",
+//           endedAt: new Date().toISOString(),
+//         });
+//       }
+//     }
+//     return Response.json({ success: true });
+//   }
+
+//   // --- 2. HANDLE FRONTEND START BUTTON ---
+//   const { userid, interviewId } = body;
+//   try {
+//     await db.collection("interviews").doc(interviewId).set({
+//       userId: userid,
+//       interviewId: interviewId,
+//       role: "Preparing...",
+//       level: "...",
+//       techstack: [],
+//       finalized: false,
+//       coverImage: getRandomInterviewCover(),
+//       createdAt: new Date().toISOString(),
+//     });
+
+//     return Response.json({ success: true, interviewId }, { status: 200 });
+//   } catch (error: any) {
+//     return Response.json({ success: false, error: error.message }, { status: 500 });
+//   }
+// }
+
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
 
 export async function POST(request: Request) {
   const body = await request.json();
 
-  // --- 1. HANDLE VAPI TOOL CALLS & WEBHOOKS ---
+  // --- 1. HANDLE VAPI (Tools & Webhooks) ---
+  // Vapi sends a 'message' object. This block makes Vapi happy.
   if (body.message) {
     const messageType = body.message.type;
 
-    // A. Handle 'getUserData' Tool Call
     if (messageType === "tool-call") {
       const toolCall = body.message.toolCalls[0];
       const { name, arguments: args } = toolCall.function;
 
       if (name === "getUserData") {
-        // Update the placeholder with real user details
+        // Save real data to Firebase
         await db.collection("interviews").doc(args.interviewId).update({
           role: args.role,
           level: args.level,
           type: args.type,
-          techstack: typeof args.techstack === 'string' ? args.techstack.split(",") : args.techstack,
+          techstack: args.techstack,
           amount: args.amount,
           updatedAt: new Date().toISOString(),
         });
 
-        // CRITICAL: Return this result so the Assistant knows it succeeded
         return Response.json({
           results: [{ 
             toolCallId: toolCall.id, 
-            result: "Success! The interview card has been created on the user's dashboard. You may now proceed with the first question." 
+            result: "Success! The interview card is created. Proceed to the first question." 
           }]
         }, { status: 200 });
       }
-
-      // B. Handle 'record_interview_results' Tool Call
-      if (name === "record_interview_results") {
-        await db.collection("feedbacks").doc(args.interviewId).set({
-          totalScore: args.totalScore,
-          finalAssessment: args.finalAssessment,
-          interviewId: args.interviewId,
-          createdAt: new Date().toISOString(),
-        });
-
-        return Response.json({
-          results: [{ toolCallId: toolCall.id, result: "Results recorded successfully." }]
-        }, { status: 200 });
-      }
     }
-
-    // C. Handle End of Call (Finalize)
-    if (messageType === "end-of-call-report") {
-      const { interviewId } = body.message.call?.metadata || {};
-      if (interviewId) {
-        await db.collection("interviews").doc(interviewId).update({
-          finalized: true,
-          transcript: body.message.artifact?.transcript || "",
-          endedAt: new Date().toISOString(),
-        });
-      }
-    }
-    return Response.json({ success: true });
+    // Return a generic 200 for other Vapi messages (like logs)
+    return Response.json({ success: true }, { status: 200 });
   }
 
-  // --- 2. HANDLE FRONTEND START BUTTON ---
+  // --- 2. HANDLE FRONTEND BUTTON (The Placeholder) ---
   const { userid, interviewId } = body;
-  try {
-    await db.collection("interviews").doc(interviewId).set({
-      userId: userid,
-      interviewId: interviewId,
-      role: "Preparing...",
-      level: "...",
-      techstack: [],
-      finalized: false,
-      coverImage: getRandomInterviewCover(),
-      createdAt: new Date().toISOString(),
-    });
-
-    return Response.json({ success: true, interviewId }, { status: 200 });
-  } catch (error: any) {
-    return Response.json({ success: false, error: error.message }, { status: 500 });
+  if (interviewId && userid) {
+    try {
+      await db.collection("interviews").doc(interviewId).set({
+        userId: userid,
+        interviewId: interviewId,
+        role: "Preparing...",
+        level: "...",
+        techstack: [],
+        finalized: false,
+        coverImage: getRandomInterviewCover(),
+        createdAt: new Date().toISOString(),
+      });
+      return Response.json({ success: true }, { status: 200 });
+    } catch (error: any) {
+      return Response.json({ success: false, error: error.message }, { status: 500 });
+    }
   }
+
+  return Response.json({ error: "Invalid Request" }, { status: 400 });
 }
